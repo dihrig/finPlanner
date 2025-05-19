@@ -1,26 +1,25 @@
 package main
 
 import (
-    "fmt"
-    "log"
-    "net/http"
+	"log"
+	"net/http"
 
-    "github.com/dihrig/finPlanner/config"
-    "github.com/dihrig/finPlanner/db"
-    "github.com/dihrig/finPlanner/router"
+	"github.com/dihrig/finPlanner/config"
+	"github.com/dihrig/finPlanner/db"
 )
 
 func main() {
-    cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Config error: %v", err)
+	}
 
-    pool, err := db.Connect(cfg)
-    if err != nil {
-        log.Fatalf("DB error: %v", err)
-    }
-    defer pool.Close()
+	conn, err := db.Connect(&cfg.DB)
+	if err != nil {
+		log.Fatalf("DB connection error: %v", err)
+	}
+	defer conn.Close()
 
-    r := router.New(pool)
-
-    fmt.Println("Server started on :" + cfg.Port)
-    http.ListenAndServe(":"+cfg.Port, r)
+	log.Printf("Server starting on :%s...", cfg.Server.Port)
+	http.ListenAndServe(":"+cfg.Server.Port, nil)
 }

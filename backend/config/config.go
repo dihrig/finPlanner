@@ -1,30 +1,54 @@
+// config/config.go
 package config
 
-import "os"
+import (
+	"fmt"
+	"os"
+
+	"github.com/joho/godotenv"
+)
 
 type Config struct {
-    Port     string
-    DBUser   string
-    DBPass   string
-    DBHost   string
-    DBPort   string
-    DBName   string
+	DB     DBConfig
+	Server ServerConfig
 }
 
-func Load() Config {
-    return Config{
-        Port:     getEnv("PORT", "8080"),
-        DBUser:   getEnv("DB_USER", "myuser"),
-        DBPass:   getEnv("DB_PASSWORD", "mypassword"),
-        DBHost:   getEnv("DB_HOST", "db"),
-        DBPort:   getEnv("DB_PORT", "5432"),
-        DBName:   getEnv("DB_NAME", "mydatabase"),
-    }
+type DBConfig struct {
+	User string
+	Pass string
+	Host string
+	Port string
+	Name string
 }
 
-func getEnv(key, fallback string) string {
-    if val := os.Getenv(key); val != "" {
-        return val
-    }
-    return fallback
+type ServerConfig struct {
+	Port string
+}
+
+func Load() (*Config, error) {
+	_ = godotenv.Load()
+
+	requiredEnv := []string{
+		"POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB",
+		"POSTGRES_HOST", "POSTGRES_PORT", "BACKEND_PORT",
+	}
+
+	for _, key := range requiredEnv {
+		if os.Getenv(key) == "" {
+			return nil, fmt.Errorf("missing required environment variable: %s", key)
+		}
+	}
+
+	return &Config{
+		DB: DBConfig{
+			User: os.Getenv("POSTGRES_USER"),
+			Pass: os.Getenv("POSTGRES_PASSWORD"),
+			Host: os.Getenv("POSTGRES_HOST"),
+			Port: os.Getenv("POSTGRES_PORT"),
+			Name: os.Getenv("POSTGRES_DB"),
+		},
+		Server: ServerConfig{
+			Port: os.Getenv("BACKEND_PORT"),
+		},
+	}, nil
 }
